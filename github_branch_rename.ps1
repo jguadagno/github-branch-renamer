@@ -71,13 +71,17 @@ function Get-GitHub-RepoRefs-Uri {
     $GitHubApi_RootUri + "/repos/{user_name}/{repo_name}/git/refs" -replace "{user_name}", $UserName -replace "{repo_name}", $RepoName
 }
 
+function Get-PSVersion {
+    if (test-path variable:psversiontable) {$psversiontable.psversion.Major} else {"-1"} 
+}
+
 function Rename-GitHub-Branches {
     Param (
 
-        [Parameter(Mandatory=$true)] [string] $GitHubToken, 
-        [Parameter(Mandatory=$true)] [string] $User, 
-        [Parameter(Mandatory=$true)] [string] $FromBranch, 
-        [Parameter(Mandatory=$true)] [string] $ToBranch,
+        [Parameter(Mandatory=$true)] [ValidateNotNullOrEmpty()] [string] $GitHubToken, 
+        [Parameter(Mandatory=$true)] [ValidateNotNullOrEmpty()] [string] $User, 
+        [Parameter(Mandatory=$true)] [ValidateNotNullOrEmpty()] [string] $FromBranch, 
+        [Parameter(Mandatory=$true)] [ValidateNotNullOrEmpty()] [string] $ToBranch,
         [Parameter(Mandatory=$false)] [string] $ApiRootUri = 'https://api.github.com' 
     )
     
@@ -87,7 +91,16 @@ function Rename-GitHub-Branches {
     $script:GitHubApi_Headers = @{'Authorization' = 'Bearer ' + $GitHubToken}
 
     $userRepoUri = Get-GitHub-UserRepos-Uri $GitHubUser
-    $reposFromApi = Invoke-RestMethod -Uri $userRepoUri -Headers $GitHubApi_Headers -FollowRelLink -MaximumFollowRelLink 5
+
+    $version = Get-PSVersion
+    if ($version -lt 6)
+    {
+        $reposFromApi = Invoke-RestMethod -Uri $userRepoUri -Headers $GitHubApi_Headers
+    }
+    else
+    {
+        $reposFromApi = Invoke-RestMethod -Uri $userRepoUri -Headers $GitHubApi_Headers -FollowRelLink -MaximumFollowRelLink 5
+    }
 
     $repos = @()
     $userRepos = @()
